@@ -16,6 +16,7 @@ type State<TNode extends Node> = {
 };
 
 export const toStr = ([x, y]: Point): PointS => `${x}_${y}`;
+export const fromStr = (p: PointS): Point => p.split('_').map(x => parseInt(x, 10)) as Point;
 
 export const shortestPath = <TNode extends Node>(
     grid: Grid,
