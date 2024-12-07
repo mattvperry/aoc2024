@@ -2,7 +2,7 @@ import { MinPriorityQueue } from '@datastructures-js/priority-queue';
 
 export type Point = [number, number];
 export type PointS = `${number}_${number}`;
-export type Grid = Map<PointS, number>;
+export type Grid<T = number> = Map<PointS, T>;
 
 export type Node = {
     pos: Point,
