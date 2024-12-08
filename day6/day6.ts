@@ -1,5 +1,5 @@
 import { Point, PointS, Grid, toStr } from '../shared/pathfinding';
-import { readInputLines } from '../shared/utils';
+import { readInputLines, reduce } from '../shared/utils';
 
 const dirs: [number, number][] = [
     [0, -1],
@@ -24,10 +24,9 @@ const parseGrid = (lines: string[]): [Grid<boolean>, Point] => {
     return [grid, [sx, sy]];
 };
 
-const steps = (grid: Grid<boolean>, [x, y]: Point, dir: number): Set<PointS> => {
-    const set = new Set<PointS>();
+function* steps(grid: Grid<boolean>, [x, y]: Point, dir: number): Iterable<[Point, number]> {
     while (true) {
-        set.add(toStr([x, y]));
+        yield [[x, y], dir];
         const [dx, dy] = dirs[dir];
         const [nx, ny] = [x + dx, y + dy];
         const cell = grid.get(toStr([nx, ny]));
@@ -39,17 +38,46 @@ const steps = (grid: Grid<boolean>, [x, y]: Point, dir: number): Set<PointS> => 
             [x, y] = [nx, ny];
         }
     }
-
-    return set;
 };
 
 const day6 = (lines: string[]): [number, number] => {
     const [grid, start] = parseGrid(lines);
 
+    const seen = new Set<`${PointS}_${number}`>();
+    const points = new Set<PointS>();
+    const extraWalls = new Set<PointS>();
+    for (const [[x, y], dir] of steps(grid, start, 0)) {
+        const curr = toStr([x, y]);
+        points.add(curr);
+        seen.add(`${curr}_${dir}`);
+
+        const [dx, dy] = dirs[dir];
+        const facing = toStr([x + dx, y + dy]);
+        if (grid.get(facing) === true || points.has(facing)) {
+            continue;
+        }
+
+        const aseen = new Set<`${PointS}_${number}`>();
+        const agrid = new Map<PointS, boolean>(grid.entries());
+        agrid.set(facing, true);
+        for (const [[ax, ay], adir] of steps(agrid, [x, y], (dir + 1) % 4)) {
+            const [altDx, altDy] = dirs[adir];
+            const acurr = toStr([ax, ay]);
+            aseen.add(`${acurr}_${adir}`);
+
+            const astate = `${toStr([ax + altDx, ay + altDy])}_${adir}` as const;
+            if (seen.has(astate) || aseen.has(astate)) {
+                extraWalls.add(facing);
+                break;
+            }
+        }
+    }
+
+    extraWalls.delete(toStr(start));
     return [
-        steps(grid, start, 0).size,
-        0,
-    ];
+        points.size,
+        extraWalls.size,
+    ]
 };
 
 (async () => {
