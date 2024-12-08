@@ -14,6 +14,14 @@ export function* map<T, U>(data: Iterable<T>, fn: (curr: T) => U): Iterable<U> {
     }
 }
 
+export function* filter<T>(data: Iterable<T>, fn: (curr: T) => boolean): Iterable<T> {
+    for (const x of data) {
+        if (fn(x)) {
+            yield x;
+        }
+    }
+}
+
 export function reduce<T, U>(
     data: Iterable<T>,
     seed: U,
@@ -157,7 +165,7 @@ export const memoize = <P extends any[], R, K extends PropertyKey>(
     };
 };
 
-export const distinct = <T>(xs: T[]): T[] => Array.from(new Set<T>(xs));
+export const distinct = <T>(xs: Iterable<T>): T[] => Array.from(new Set<T>(xs));
 
 export const splitOn = <T>(xs: T[], on: T): [T[], T[]] => {
     const idx = xs.indexOf(on);
