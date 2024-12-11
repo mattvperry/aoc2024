@@ -268,15 +268,6 @@ export const repeatFn = <T>(x: T, times: number, fn: (x: T) => T): T => {
     return x;
 };
 
-export const isSubset = <T>(x: Set<T>, y: Set<T>): boolean =>
-    reduce(x, true as boolean, (acc, curr) => acc && y.has(curr));
-
-export const intersect = <T>(xs: Set<T>, ys: Set<T>): Set<T> =>
-    new Set([...xs].filter(x => ys.has(x)));
-
-export const difference = <T>(xs: Set<T>, ys: Set<T>): Set<T> =>
-    new Set([...xs].filter(x => !ys.has(x)));
-
 export const mod = (n: number, m: number): number => ((n % m) + m) % m;
 
 export const isLiteral = <T extends readonly string[]>(
