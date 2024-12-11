@@ -153,15 +153,15 @@ export const memoize = <P extends any[], R, K extends PropertyKey>(
     fn: (...args: P) => R,
     key: (...args: P) => K,
 ): ((...args: P) => R) => {
-    const memo = {} as Record<K, R>;
-    return (...args: P) => {
+    const memo = new Map<K, R>();
+    return (...args: P): R => {
         const k = key(...args);
-        if (isDefined(memo[k])) {
-            return memo[k];
+        const val = memo.get(k) ?? fn(...args);
+        if (!memo.has(k)) {
+            memo.set(k, val);
         }
 
-        memo[k] = fn(...args);
-        return memo[k];
+        return val;
     };
 };
 
