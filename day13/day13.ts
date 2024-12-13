@@ -1,4 +1,4 @@
-import { readInputLines, splitOnEvery, sum } from "../shared/utils";
+import { readInputLines, splitOnEvery, sumBy } from "../shared/utils";
 
 type Game = {
     id: number,
@@ -21,48 +21,29 @@ const parseGame = (lines: string[], id: number): Game => {
     };
 };
 
-const isWinner = (
-    [a, b]: [number, number],
-    { a: [ax, ay], b: [bx, by], target: [tx, ty] }: Game): boolean => {
-    return (a * ax + b * bx === tx) && (a * ay + b * by === ty);
+const valid = ([a, b]: [number, number]) => {
+    return a % 1 === 0 && b % 1 === 0;
 };
 
-const cost = ([a, b]: [number, number]): number => {
-    return a * 3 + b;
+const solve = ({ a: [ax, ay], b: [bx, by], target: [tx, ty] }: Game): [number, number] => {
+    const b = (ax * ty - ay * tx) / (ax * by - ay * bx);
+    const a = (tx - bx * b) / ax;
+    return [a, b];
 };
 
-function* pushes(): Iterable<[number, number]> {
-    for (let a = 1; a <= 100; ++a) {
-        for (let b = 1; b <= 100; ++b) {
-            yield [a, b];
-        }
+const transform = (game: Game): Game => {
+    return {
+        ...game,
+        target: game.target.map(t => t + 10000000000000) as Game['target'],
     }
-};
-
-const part1 = (games: Game[]): number => {
-    const mins = new Map<number, number>();
-    for (const push of pushes()) {
-        for (const game of games) {
-            if (!isWinner(push, game)) {
-                continue;
-            }
-
-            const curr = cost(push);
-            if (curr < (mins.get(game.id) ?? Infinity)) {
-                mins.set(game.id, curr);
-            }
-        }
-    }
-
-    return sum(mins.values());
 };
 
 const day13 = (lines: string[]): [number, number] => {
     const games = parseGames(lines);
 
     return [
-        part1(games),
-        0
+        sumBy(games.map(solve).filter(valid), ([a, b]) => a * 3 + b),
+        sumBy(games.map(transform).map(solve).filter(valid), ([a, b]) => a * 3 + b),
     ];
 };
 
