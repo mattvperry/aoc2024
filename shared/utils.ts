@@ -143,9 +143,9 @@ export const groupBy = <T, K extends PropertyKey>(
 
 export const frequency = <T extends PropertyKey>(
     input: Iterable<T>,
-): Record<T, number> =>
-    reduce(input, {} as ReturnType<typeof frequency>, (acc, curr) => {
-        acc[curr] = acc[curr] ? acc[curr] + 1 : 1;
+): Map<T, number> =>
+    reduce(input, new Map<T, number>(), (acc, curr) => {
+        acc.set(curr, (acc.get(curr) ?? 0) + 1);
         return acc;
     });
 
