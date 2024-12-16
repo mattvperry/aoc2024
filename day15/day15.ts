@@ -1,7 +1,7 @@
 import { fromStr, Grid, Point, PointS, toStr } from "../shared/pathfinding";
-import { readInputLines, splitOn, sumBy } from "../shared/utils";
+import { isDefined, readInputLines, splitOn, sumBy } from "../shared/utils";
 
-type Item = '#' | 'O';
+type Item = '#' | 'O' | '[' | ']';
 type Dir = 'v' | '>' | '<' | '^';
 
 const parseInput = (lines: string[]): [Grid<Item>, Point, Dir[]] => {
@@ -19,7 +19,7 @@ const parseGrid = (lines: string[]): [Grid<Item>, Point] => {
     for (let y = 0; y < lines.length; ++y) {
         for (let x = 0; x < lines[0].length; ++x) {
             const curr = lines[y][x];
-            if (curr === '#' || curr === 'O') {
+            if (curr === '#' || curr === 'O' || curr === '[' || curr === ']') {
                 grid.set(toStr([x, y]), curr);
             } else if (curr === '@') {
                 start = [x, y];
@@ -28,6 +28,15 @@ const parseGrid = (lines: string[]): [Grid<Item>, Point] => {
     }
 
     return [grid, start];
+};
+
+const transform = (lines: string[]): string[] => {
+    return lines.map(l => l
+        .replaceAll("#", "##")
+        .replaceAll("O", "[]")
+        .replaceAll(".", "..")
+        .replaceAll("@", "@.")
+    );
 };
 
 const dirs: Record<Dir, Point> = {
@@ -39,25 +48,40 @@ const dirs: Record<Dir, Point> = {
 
 function* contiguous(grid: Grid<Item>, [x, y]: Point, dir: Dir): Iterable<[Point, Item | undefined]> {
     const [dx, dy] = dirs[dir];
-    while (true) {
-        [x, y] = [x + dx, y + dy];
-        const item = grid.get(toStr([x, y]));
+    const toVisit: Point[] = [[x + dx, y + dy]];
+    const seen = new Set<PointS>();
+    while (toVisit.length !== 0) {
+        [x, y] = toVisit.pop()!;
+        const currS = toStr([x, y]);
+        if (seen.has(currS)) {
+            continue;
+        }
+
+        seen.add(toStr([x, y]));
+        const item = grid.get(currS);
         yield [[x, y], item];
-        if (item === undefined || item === '#') {
-            break;
+        if (item === ']') {
+            toVisit.push(...[[x + dx, y + dy] as Point, [x - 1, y] as Point])
+        } else if (item === '[') {
+            toVisit.push(...[[x + dx, y + dy] as Point, [x + 1, y] as Point])
+        } else if (item === 'O') {
+            toVisit.push([x + dx, y + dy]);
         }
     }
 }
 
 const move = (grid: Grid<Item>, [x, y]: Point, dir: Dir): Point => {
-    const [[_, head], ...rest] = Array.from(contiguous(grid, [x, y], dir)).toReversed();
-    if (head === '#') {
+    const block = Array.from(contiguous(grid, [x, y], dir));
+    if (block.some(([,i]) => i === '#')) {
         return [x, y];
     }
 
-    const [dx, dy] = dirs[dir];
-    for (const [[ix, iy], item] of rest) {
+    for (const [[ix, iy]] of block.filter(([,i]) => isDefined(i))) {
         grid.delete(toStr([ix, iy]));
+    }
+
+    const [dx, dy] = dirs[dir];
+    for (const [[ix, iy], item] of block.filter(([,i]) => isDefined(i))) {
         grid.set(toStr([ix + dx, iy + dy]), item!);
     }
 
@@ -76,19 +100,16 @@ const coord = ([x, y]: Point): number => {
     return y * 100 + x;
 };
 
-const day15 = (lines: string[]): [number, number] => {
+const day15 = (lines: string[]): number => {
     const [grid, start, ds] = parseInput(lines);
-    const final = exec(grid, start, ds);
-
-    return [
-        sumBy(grid.entries(), ([k, v]) => v === 'O' ? coord(fromStr(k)) : 0),
-        0,
-    ];
+    exec(grid, start, ds);
+    return sumBy(grid.entries(), ([k, v]) => v === '#' || v === ']' ? 0 : coord(fromStr(k)));
 };
 
 (async () => {
     const input = await readInputLines('day15');
-    const [part1, part2] = day15(input);
+    const part1 = day15(input);
+    const part2 = day15(transform(input));
 
     console.log(part1);
     console.log(part2);
