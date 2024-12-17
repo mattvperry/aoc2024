@@ -19,18 +19,17 @@ export const toStr = ([x, y]: Point): PointS => `${x}_${y}`;
 export const fromStr = (p: PointS): Point => p.split('_').map(x => parseInt(x, 10)) as Point;
 
 export const shortestPath = <TNode extends Node>(
-    grid: Grid,
-    initial: TNode[],
+    initial: [TNode, number][],
     end: Point,
     getKey: (node: TNode) => string,
-    next: (curr: TNode) => IterableIterator<TNode>,
+    next: (curr: TNode) => Iterable<[TNode, number]>,
     finish?: (node: TNode) => boolean,
 ): State<TNode> | undefined => {
     const visited = new Set<string>();
-    const queue = MinPriorityQueue.fromArray(initial.map<State<TNode>>(node => ({
+    const queue = MinPriorityQueue.fromArray(initial.map<State<TNode>>(([node, cost]) => ({
         key: getKey(node),
         node,
-        cost: grid.get(toStr(node.pos))!,
+        cost,
         prev: null,
     })), s => s.cost);
 
@@ -45,8 +44,7 @@ export const shortestPath = <TNode extends Node>(
             return curr;
         }
 
-        for (const node of next(curr.node)) {
-            const cost = grid.get(toStr(node.pos));
+        for (const [node, cost] of next(curr.node)) {
             if (cost === undefined) {
                 continue;
             }
