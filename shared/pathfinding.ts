@@ -24,8 +24,8 @@ export const shortestPath = <TNode extends Node>(
     getKey: (node: TNode) => string,
     next: (curr: TNode) => Iterable<[TNode, number]>,
     finish?: (node: TNode) => boolean,
-): State<TNode> | undefined => {
-    const visited = new Set<string>();
+): [State<TNode>, Map<string, number>] | undefined => {
+    const visited = new Map<string, number>();
     const queue = MinPriorityQueue.fromArray(initial.map<State<TNode>>(([node, cost]) => ({
         key: getKey(node),
         node,
@@ -39,9 +39,9 @@ export const shortestPath = <TNode extends Node>(
             continue;
         }
 
-        visited.add(curr.key);
+        visited.set(curr.key, curr.cost);
         if (toStr(curr.node.pos) === toStr(end) && (finish?.(curr.node) ?? true)) {
-            return curr;
+            return [curr, visited];
         }
 
         for (const [node, cost] of next(curr.node)) {

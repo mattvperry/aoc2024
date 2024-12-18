@@ -1,5 +1,5 @@
 import { Node, shortestPath, Point, PointS, toStr } from "../shared/pathfinding";
-import { mod, readInputLines } from "../shared/utils";
+import { filter, map, mod, readInputLines, reduce } from "../shared/utils";
 
 type Dir = 0 | 1 | 2 | 3;
 type DirNode = Node & {
@@ -41,27 +41,59 @@ const next = ({ pos: [x, y], dir }: DirNode, walls: Set<PointS>): Iterable<[DirN
     const nodes = [-1, 0, 1].map(dd => {
         const d = mod(dir + dd, dirs.length);
         const [dx, dy] = dirs[d];
-        return [
-            { pos: [x + dx, y + dy], dir: d },
-            dd === 0 ? 1 : 1001
-        ] as [DirNode, number];
+        if (dd === 0) {
+            return [
+                { pos: [x + dx, y + dy], dir: d},
+                1,
+            ] as [DirNode, number];
+        } else {
+            return [
+                { pos: [x, y], dir: d },
+                1000,
+            ] as [DirNode, number];
+        }
     });
 
     return nodes.filter(([n]) => !walls.has(toStr(n.pos)));
 }
 
+const findAll = (
+    { pos: [x, y], dir }: DirNode,
+    [ex, ey]: Point,
+    walls: Set<PointS>,
+    cost: number,
+    path: Set<string>,
+    minCost: number,
+    visited: Map<string, number>
+): Set<string> => {
+    if (x === ex && y === ey && cost === minCost) {
+        return path;
+    }
+
+    if (cost > minCost || cost > visited.get(`${x}_${y}_${dir}`)!) {
+        return new Set<string>();
+    }
+
+    const ns = filter(next({ pos: [x, y], dir }, walls), ([n]) => !path.has(`${toStr(n.pos)}-${n.dir}`));
+    return reduce(
+        map(ns, ([n, c]) => findAll(n, [ex, ey], walls, cost + c, new Set<string>([...path, `${toStr(n.pos)}-${n.dir}`]), minCost, visited)),
+        new Set<string>(),
+        (acc, curr) => acc.union(curr));
+};
+
 const day16 = (lines: string[]): [number, number] => {
     const [walls, start, end] = parseMap(lines);
-    const last = shortestPath<DirNode>(
+    const [state, visited] = shortestPath<DirNode>(
         [[{ pos: start, dir: 1 }, 0]],
         end,
         ({ pos: [x, y], dir }) => `${x}_${y}_${dir}`,
         node => next(node, walls),
-    );
+    )!;
 
+    const all = findAll({ pos: start, dir: 1 }, end, walls, 0, new Set<PointS>(), state.cost, visited);
     return [
-        last?.cost ?? -1,
-        0,
+        state.cost,
+        new Set<string>(map(all, s => s.split('-')[0])).size,
     ];
 };
 
