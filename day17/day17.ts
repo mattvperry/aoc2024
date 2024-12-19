@@ -1,7 +1,8 @@
-import { readInputLines } from "../shared/utils";
+import { mod, readInputLines } from "../shared/utils";
 
 type State = {
     pc: number,
+    tape: Bit[],
     a: number,
     b: number,
     c: number,
@@ -10,70 +11,108 @@ type State = {
 
 type Operand = 'literal' | 'combo';
 type Bit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-type Op = {
-    name: typeof ops[number]['name'],
-    operandType: Operand,
-    operand: Bit,
-    exec: (state: State, operand: number) => State,
+type Op = typeof bitToOp[number];
+
+const parseProgram = (lines: string[]): State => {
+    const [a, b, c, _, o] = lines;
+
+    return {
+        pc: 0,
+        out: [],
+        a: parseInt(a.split(': ')[1], 10),
+        b: parseInt(b.split(': ')[1], 10),
+        c: parseInt(c.split(': ')[1], 10),
+        tape: o.split(': ')[1].split(',').map(x => parseInt(x, 10)) as Bit[],
+    };
 };
 
-const ops = [
-    { name: 'adv', operand: 'combo', exec: (state: State, operand: number) => ({
+const bitToOp = [
+    'adv',
+    'bxl',
+    'bst',
+    'jnz',
+    'bxc',
+    'out',
+    'bdv',
+    'cdv',
+];
+
+const run: Record<Op, (state: State) => State> = {
+    adv: (state: State): State => ({
         ...state,
-        pc: state.pc + 1,
-        a: Math.floor(state.a / Math.pow(operand, 2)),
-    }) },
-    { name: 'bxl', operand: 'literal', exec: (state: State, operand: number) => ({
+        pc: state.pc + 2,
+        a: Math.floor(state.a / Math.pow(2, operand(state, 'combo'))),
+    }),
+    bxl: (state: State): State => ({
         ...state,
-        pc: state.pc + 1,
-        b: state.b ^ operand,
-    }) },
-    { name: 'bst', operand: 'combo', exec: (state: State, operand: number) => ({
+        pc: state.pc + 2,
+        b: state.b ^ operand(state, 'literal'),
+    }),
+    bst: (state: State): State => ({
         ...state,
-        b: operand % 8,
-    }) },
-    { name: 'jnz', operand: 'literal', exec: (state: State, operand: number) => ({
-
-    }) },
-    { name: 'bxc', operand: 'literal', exec: (state: State, _: number) => {
-
-    } },
-    { name: 'out', operand: 'combo', exec: (state: State, operand: number) => {
-
-    } },
-    { name: 'bdv', operand: 'combo', exec: (state: State, operand: number) => {
-
-    } },
-    { name: 'cdv', operand: 'combo', exec: (state: State, operand: number) => {
-
-    } },
-] as const;
-
-const parseProgram = (lines: string[]): [State, Op[]] => {
+        pc: state.pc + 2,
+        b: mod(operand(state, 'combo'), 8),
+    }),
+    jnz: (state: State): State => ({
+        ...state,
+        pc: state.a === 0 ? state.pc + 2 : operand(state, 'literal'),
+    }),
+    bxc: (state: State): State => ({
+        ...state,
+        pc: state.pc + 2,
+        b: state.b ^ state.c,
+    }),
+    out: (state: State): State => ({
+        ...state,
+        pc: state.pc + 2,
+        out: [...state.out, mod(operand(state, 'combo'), 8)]
+    }),
+    bdv: (state: State): State => ({
+        ...state,
+        pc: state.pc + 2,
+        b: Math.floor(state.a / Math.pow(2, operand(state, 'combo'))),
+    }),
+    cdv: (state: State): State => ({
+        ...state,
+        pc: state.pc + 2,
+        c: Math.floor(state.a / Math.pow(2, operand(state, 'combo'))),
+    }),
 };
 
-const readOperand = (state: State, op: Op): number => {
-    if (op.operandType === 'literal') {
-        return op.operand;
+const operand = ({ pc, tape, a, b, c }: State, type: Operand): number => {
+    const bit = tape[pc + 1];
+    if (type === 'literal') {
+        return bit;
     } else {
         return {
             0: 0,
             1: 1,
             2: 2,
             3: 3,
-            4: state.a,
-            5: state.b,
-            6: state.c,
+            4: a,
+            5: b,
+            6: c,
             7: -Infinity,
-        }[op.operand];
+        }[bit];
     }
 };
 
-const day17 = (lines: string[]): [number, number] => {
-    const [state, ops] = parseProgram(lines);
+const exec = (state: State): State => {
+    while (state.pc <= state.tape.length - 2) {
+        const bit = state.tape[state.pc];
+        const op = run[bitToOp[bit]];
+        state = op(state);
+    }
+
+    return state;
+};
+
+const day17 = (lines: string[]): [string, number] => {
+    const state = parseProgram(lines);
+    const final = exec(state);
 
     return [
-        0,
+        final.out.join(','),
         0
     ];
 };
