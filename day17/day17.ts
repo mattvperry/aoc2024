@@ -51,10 +51,9 @@ function* quine(tape: Bit[]): Iterable<number> {
 
 const day17 = (lines: string[]): [string, number] => {
     const state = parseProgram(lines);
-    const final = Array.from(run(state.a));
 
     return [
-        final.join(','),
+        Array.from(run(state.a)).join(','),
         Math.min(...quine(state.tape)),
     ];
 };
