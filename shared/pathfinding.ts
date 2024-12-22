@@ -8,7 +8,7 @@ export type Node = {
     pos: Point,
 }
 
-type State<TNode extends Node> = {
+export type State<TNode extends Node> = {
     key: string,
     node: TNode,
     cost: number,
