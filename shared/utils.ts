@@ -268,6 +268,14 @@ export const repeatFn = <T>(x: T, times: number, fn: (x: T) => T): T => {
     return x;
 };
 
+export function* scan<T>(x: T, times: number, fn: (x: T) => T): Iterable<T> {
+    yield x;
+    for (let i = 0; i < times; ++i) {
+        x = fn(x);
+        yield x;
+    }
+};
+
 export const mod = (n: number, m: number): number => ((n % m) + m) % m;
 
 export const isLiteral = <T extends readonly string[]>(
