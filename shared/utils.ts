@@ -14,6 +14,8 @@ export function* map<T, U>(data: Iterable<T>, fn: (curr: T) => U): Iterable<U> {
     }
 }
 
+export function filter<T, U extends T>(data: Iterable<T>, fn: (curr: T) => curr is U): Iterable<U>;
+export function filter<T>(data: Iterable<T>, fn: (curr: T) => boolean): Iterable<T>;
 export function* filter<T>(data: Iterable<T>, fn: (curr: T) => boolean): Iterable<T> {
     for (const x of data) {
         if (fn(x)) {

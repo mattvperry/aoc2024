@@ -12,7 +12,7 @@ const day1 = (lines: string[]): [number, number] => {
     const lookup = frequency(right);
     return [
         sum(zip(left.toSorted(), right.toSorted()).map(([l, r]) => Math.abs(l - r))),
-        sum(left.map(x => x * (lookup[x] ?? 0))),
+        sum(left.map(x => x * (lookup.get(x) ?? 0))),
     ];
 };
 
